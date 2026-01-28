@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Receipt Paper -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,20 L84,20 L84,88 L24,88 Z"/>
+    
+    <!-- Receipt top edge (torn effect) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,20 Q26,22 28,20 Q30,18 32,20 Q34,22 36,20 Q38,18 40,20 Q42,22 44,20 Q46,18 48,20 Q50,22 52,20 Q54,18 56,20 Q58,22 60,20 Q62,18 64,20 Q66,22 68,20 Q70,18 72,20 Q74,22 76,20 Q78,18 80,20 Q82,22 84,20 L84,20 Z"/>
+    
+    <!-- Receipt lines (text lines) -->
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#B0B0B0"
+        android:pathData="M32,32 L76,32"/>
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#B0B0B0"
+        android:pathData="M32,42 L76,42"/>
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#B0B0B0"
+        android:pathData="M32,52 L68,52"/>
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#B0B0B0"
+        android:pathData="M32,62 L72,62"/>
+    
+    <!-- Camera/Scanner icon overlay -->
+    <group
+        android:translateX="54"
+        android:translateY="70">
+        <!-- Camera body -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M-12,-8 L12,-8 L12,8 L-12,8 Z"/>
+        <!-- Camera lens -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-6,-2 Q-6,-6 -2,-6 Q2,-6 2,-2 Q2,2 -2,2 Q-6,2 -6,-2 Z"/>
+        <!-- Flash -->
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M-10,-6 L-8,-6 L-8,-4 L-10,-4 Z"/>
+    </group>
+    
+    <!-- Scan lines effect -->
+    <path
+        android:fillColor="#40FFFFFF"
+        android:pathData="M24,20 L84,20 L84,30 L24,30 Z"/>
+    
+</vector>
