@@ -4,11 +4,15 @@ An Android app that scans paper receipts with your camera, extracts text with on
 
 ## Features
 
-- **Camera capture** — Take a photo of a receipt using CameraX
+- **Camera capture** — Take a photo of a receipt using a native shutter-style camera button
 - **OCR** — Extract text on-device with Google ML Kit (no internet needed for scanning)
 - **Edit & save** — Review, fix, and save merchant, date, and total
 - **Local storage** — Receipts saved with Room
 - **Supabase sync** — Optional cloud backup and sync across devices (see [SUPABASE_SETUP.md](SUPABASE_SETUP.md))
+- **List & Grid View** — Toggle between a vertical list and a 2-column grid layout; preference is persisted across sessions
+- **Skeleton loading** — Animated shimmer placeholder cards shown while receipts are loading
+- **Settings page** — Dedicated settings screen accessible via the gear icon; includes a toggle switch for Dark / Light mode
+- **Zoomable image viewer** — Tap a receipt image to open a full-screen, pinch-to-zoom dialog
 
 ## Tech Stack
 
@@ -18,6 +22,7 @@ An Android app that scans paper receipts with your camera, extracts text with on
 - **Room** — Local SQLite database
 - **Supabase** — Postgres, Storage, Realtime (optional)
 - **Coil** — Image loading in Compose
+- **Material 3 + Extended Icons** — UI components and icons
 
 ## Requirements
 
@@ -65,8 +70,9 @@ app/src/main/java/com/example/receiptscanner/
 ├── data/           # Room, Supabase, entities, DAOs, sync
 ├── navigation/     # Navigation and Screen definitions
 ├── ui/
-│   ├── screens/    # Home, Camera, Preview, Result, List, Detail, Edit
-│   └── theme/      # Compose theme, colors, typography
+│   ├── components/ # Reusable glass UI components (GlassCard, GlassSurface, GlassTopAppBar)
+│   ├── screens/    # Home, Camera, Preview, Result, List, Detail, Edit, Settings
+│   └── theme/      # Compose theme, colors, typography, shapes
 ├── utils/          # OCR, image handling, permissions, receipt helpers
 ├── MainActivity.kt
 ├── ReceiptScannerApp.kt

@@ -4,21 +4,25 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,8 +33,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.receiptscanner.getCameraProvider
+import com.example.receiptscanner.ui.components.GlassCard
+import com.example.receiptscanner.ui.components.GlassTopAppBar
 import com.example.receiptscanner.utils.rememberCameraPermissionState
 import com.example.receiptscanner.utils.takePhoto
 
@@ -65,11 +72,11 @@ fun CameraScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Scan") },
+            GlassTopAppBar(
+                title = { Text("") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -91,26 +98,39 @@ fun CameraScreen(
                     } else {
                         requestPermission()
                     }
-                }
+                },
+                modifier = Modifier
+                    .padding(bottom = 32.dp)
+                    .size(72.dp)
+                    .border(4.dp, androidx.compose.ui.graphics.Color.White, CircleShape),
+                shape = CircleShape,
+                containerColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                contentColor = androidx.compose.ui.graphics.Color.Transparent
             ) {
-                Text("Scan")
+                // Empty content for a simple shutter button look
             }
-        }
+        },
+        floatingActionButtonPosition = androidx.compose.material3.FabPosition.Center,
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (errorMessage != null) {
-            Surface(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(padding),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(errorMessage ?: "Unknown error")
-                    Button(onClick = { requestPermission() }) {
-                        Text("Grant Permission")
+                GlassCard(modifier = Modifier.padding(24.dp)) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(errorMessage ?: "Unknown error")
+                        Button(onClick = { requestPermission() }) {
+                            Text("Grant Permission")
+                        }
                     }
                 }
             }

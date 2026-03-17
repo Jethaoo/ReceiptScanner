@@ -19,11 +19,15 @@ import com.example.receiptscanner.ui.screens.PreviewScreen
 import com.example.receiptscanner.ui.screens.ReceiptDetailScreen
 import com.example.receiptscanner.ui.screens.ReceiptListScreen
 import com.example.receiptscanner.ui.screens.ResultScreen
+import com.example.receiptscanner.ui.screens.SettingsScreen
 import com.example.receiptscanner.utils.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun ReceiptScannerApp() {
+fun ReceiptScannerApp(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val db = remember { AppDatabase.get(context) }
@@ -57,7 +61,8 @@ fun ReceiptScannerApp() {
     when (val s = currentScreen) {
         Screen.Home -> HomeScreen(
             onScan = { navigateTo(Screen.Camera) },
-            onView = { navigateTo(Screen.List) }
+            onView = { navigateTo(Screen.List) },
+            onSettings = { navigateTo(Screen.Settings) }
         )
 
         Screen.Camera -> CameraScreen(
@@ -140,6 +145,7 @@ fun ReceiptScannerApp() {
             dao = db.receiptDao(),
             onBack = { navigateBack() },
             onOpen = { navigateTo(Screen.Detail(it)) },
+            onSettings = { navigateTo(Screen.Settings) },
             onSyncError = { message ->
                 if (message.startsWith("Synced") || message.startsWith("No receipts")) {
                     successMessage = message
@@ -147,6 +153,12 @@ fun ReceiptScannerApp() {
                     errorMessage = message
                 }
             }
+        )
+
+        Screen.Settings -> SettingsScreen(
+            isDarkTheme = isDarkTheme,
+            onToggleTheme = onToggleTheme,
+            onBack = { navigateBack() }
         )
 
         is Screen.Detail -> ReceiptDetailScreen(

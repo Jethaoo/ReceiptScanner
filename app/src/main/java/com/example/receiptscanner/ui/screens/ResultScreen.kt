@@ -12,11 +12,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.receiptscanner.ui.components.GlassCard
+import com.example.receiptscanner.ui.components.GlassTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,8 +28,9 @@ fun ResultScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Confirm Receipt") })
-        }
+            GlassTopAppBar(title = { Text("Confirm Receipt") })
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -36,19 +38,23 @@ fun ResultScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                text = "Detected Text:",
-                style = MaterialTheme.typography.titleMedium
-            )
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Detected Text:",
+                        style = MaterialTheme.typography.titleMedium
+                    )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = text.ifEmpty { "No text detected" },
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 20,
-                overflow = TextOverflow.Ellipsis
-            )
+                    Text(
+                        text = text.ifEmpty { "No text detected" },
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 20,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

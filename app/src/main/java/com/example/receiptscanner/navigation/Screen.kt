@@ -10,5 +10,6 @@ sealed class Screen {
     object List : Screen()
     data class Detail(val receipt: ReceiptEntity) : Screen()
     data class Edit(val receipt: ReceiptEntity) : Screen()
+    object Settings : Screen()
 }
 
