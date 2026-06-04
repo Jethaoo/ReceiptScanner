@@ -28,15 +28,21 @@ import com.example.receiptscanner.ui.components.GlassTopAppBar
 fun SettingsScreen(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
-    onBack: () -> Unit
+    autoSaveGalleryAfterUpload: Boolean,
+    onAutoSaveGalleryAfterUploadChange: (Boolean) -> Unit,
+    onRestoreReceipts: () -> Unit,
+    onBack: () -> Unit = {},
+    isTabRoot: Boolean = false
 ) {
     Scaffold(
         topBar = {
             GlassTopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (!isTabRoot) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 }
             )
@@ -77,6 +83,67 @@ fun SettingsScreen(
                         checked = isDarkTheme,
                         onCheckedChange = { onToggleTheme() }
                     )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Photos",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Auto-save to gallery",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "After upload succeeds, save a copy to Pictures/ReceiptScanner",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = autoSaveGalleryAfterUpload,
+                        onCheckedChange = onAutoSaveGalleryAfterUploadChange
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Cloud Syncing",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Restore Receipts",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Download deleted receipts from cloud",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    androidx.compose.material3.TextButton(onClick = { onRestoreReceipts() }) {
+                        Text("RESTORE")
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))

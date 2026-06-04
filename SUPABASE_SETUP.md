@@ -29,12 +29,17 @@ Your Receipt Scanner app now includes Supabase sync functionality! This allows y
 
 ### 3. Configure the App
 
-1. Open `app/src/main/java/com/example/receiptscanner/data/SupabaseClient.kt`
-2. Replace the placeholder values:
-   ```kotlin
-   private const val SUPABASE_URL = "YOUR_SUPABASE_URL"  // Your Project URL
-   private const val SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"  // Your anon key
+1. Open **`local.properties`** in the project root (this file is gitignored).
+2. Add your credentials on separate lines (no quotes):
+
+   ```properties
+   supabase.url=https://YOUR_PROJECT_REF.supabase.co
+   supabase.anon.key=YOUR_ANON_JWT
    ```
+
+3. Sync Gradle / rebuild. Values are compiled into `BuildConfig` so they are not stored in source control.
+
+> Keep `local.properties` out of version control. For CI, inject the same keys via environment-specific Gradle properties or your pipeline’s secret store.
 
 ### 4. Create the Database Table
 
@@ -51,7 +56,9 @@ CREATE TABLE receipts (
     total TEXT,
     image_url TEXT,
     created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT * 1000
+    updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT * 1000,
+    tags TEXT,
+    payment_method TEXT
 );
 
 -- Enable Row Level Security (RLS)
@@ -108,7 +115,7 @@ CREATE INDEX idx_receipts_created_at ON receipts(created_at DESC);
 ## Troubleshooting
 
 ### Sync Not Working?
-1. Check your Supabase URL and API key in `SupabaseClient.kt`
+1. Check `supabase.url` and `supabase.anon.key` in `local.properties`, then rebuild
 2. Verify the database table exists and has correct structure
 3. Check that Storage bucket `receipt-images` exists
 4. Check network connectivity
@@ -122,6 +129,14 @@ CREATE INDEX idx_receipts_created_at ON receipts(created_at DESC);
 If you get database errors, you may need to:
 1. Uninstall and reinstall the app (this resets local database)
 2. Or manually update the database schema
+
+### Adding tags and payment method (existing Supabase projects)
+Run in the SQL Editor:
+
+```sql
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS tags TEXT;
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS payment_method TEXT;
+```
 
 ## Security Notes
 

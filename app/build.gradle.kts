@@ -1,10 +1,21 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("org.jetbrains.kotlin.kapt")
-    kotlin("plugin.serialization") version "2.0.21"
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
+
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
+}
+
+/** Produces a Java string literal for BuildConfig (escapes `\` and `"`). */
+fun escapeForBuildConfig(value: String): String =
+    "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
     namespace = "com.example.receiptscanner"
@@ -14,10 +25,15 @@ android {
         applicationId = "com.example.receiptscanner"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val supabaseUrl = localProperties.getProperty("supabase.url", "").trim()
+        val supabaseAnonKey = localProperties.getProperty("supabase.anon.key", "").trim()
+        buildConfigField("String", "SUPABASE_URL", escapeForBuildConfig(supabaseUrl))
+        buildConfigField("String", "SUPABASE_ANON_KEY", escapeForBuildConfig(supabaseAnonKey))
     }
 
     buildTypes {
@@ -38,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -69,17 +86,16 @@ dependencies {
     // Room (LOCAL DATABASE)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // Supabase
-    implementation(platform("io.github.jan-tennert.supabase:bom:2.5.0"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
-    implementation("io.github.jan-tennert.supabase:storage-kt")
-    implementation("io.github.jan-tennert.supabase:realtime-kt")
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.storage)
     implementation(libs.kotlinx.serialization.json)
-    
+
     // Ktor engine for Android (required by Supabase)
-    implementation("io.ktor:ktor-client-android:2.3.12")
+    implementation(libs.ktor.client.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

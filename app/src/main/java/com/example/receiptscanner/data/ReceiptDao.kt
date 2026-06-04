@@ -21,6 +21,15 @@ interface ReceiptDao {
 
     @Query("SELECT * FROM receipts ORDER BY createdAt DESC")
     fun getAll(): Flow<List<ReceiptEntity>>
+
+    @Query("SELECT COUNT(*) FROM receipts")
+    fun count(): Flow<Int>
+
+    @Query("SELECT * FROM receipts WHERE createdAt BETWEEN :startAtMillis AND :endAtMillis ORDER BY createdAt DESC")
+    fun getReceiptsBetween(
+        startAtMillis: Long,
+        endAtMillis: Long
+    ): Flow<List<ReceiptEntity>>
     
     @Query("SELECT * FROM receipts WHERE synced = 0 OR synced IS NULL")
     suspend fun getUnsynced(): List<ReceiptEntity>

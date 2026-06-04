@@ -7,7 +7,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,9 +22,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import com.example.receiptscanner.data.toTagList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +45,7 @@ import com.example.receiptscanner.ui.components.GlassCard
 import com.example.receiptscanner.ui.components.GlassTopAppBar
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ReceiptDetailScreen(
     receipt: ReceiptEntity,
@@ -127,6 +132,46 @@ fun ReceiptDetailScreen(
                     Text("Merchant: ${receipt.merchant}")
                     Text("Date: ${receipt.date ?: "-"}")
                     Text("Total: ${receipt.total ?: "-"}")
+                }
+            }
+            val tagList = receipt.tags.toTagList()
+            if (tagList.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Tags",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            tagList.forEach { tag ->
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text(tag) },
+                                    enabled = false
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            receipt.paymentMethod?.takeIf { it.isNotBlank() }?.let { payment ->
+                Spacer(Modifier.height(12.dp))
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Payment",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(text = payment, style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))

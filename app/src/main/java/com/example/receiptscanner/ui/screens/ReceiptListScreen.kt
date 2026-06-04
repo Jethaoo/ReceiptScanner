@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -35,8 +37,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -61,19 +61,25 @@ import com.example.receiptscanner.data.ReceiptEntity
 import com.example.receiptscanner.data.SupabaseSyncService
 import com.example.receiptscanner.ui.components.GlassCard
 import com.example.receiptscanner.ui.components.GlassTopAppBar
+import com.example.receiptscanner.utils.receiptHasDownloadableImage
+import com.example.receiptscanner.utils.saveReceiptToGallery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptListScreen(
     dao: ReceiptDao,
-    onBack: () -> Unit,
+    onBack: () -> Unit = {},
     onOpen: (ReceiptEntity) -> Unit,
-    onSettings: () -> Unit,
-    onSyncError: ((String) -> Unit)? = null
+    onSettings: () -> Unit = {},
+    onUserMessage: (message: String, isError: Boolean) -> Unit,
+    isTabRoot: Boolean = false
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -83,13 +89,27 @@ fun ReceiptListScreen(
     val prefs = remember { context.getSharedPreferences("receipt_list_prefs", Context.MODE_PRIVATE) }
     var isGridView by remember { mutableStateOf(prefs.getBoolean("is_grid_view", false)) }
 
+    val saveReceiptImageToGallery: (ReceiptEntity) -> Unit = { receipt ->
+        scope.launch {
+            saveReceiptToGallery(context, receipt)
+                .onSuccess {
+                    onUserMessage("Image saved to Pictures/ReceiptScanner.", false)
+                }
+                .onFailure { e ->
+                    onUserMessage("Save failed: ${e.message ?: "Unknown error"}", true)
+                }
+        }
+    }
+
     Scaffold(
         topBar = {
             GlassTopAppBar(
-                title = { Text("My Receipts") },
+                title = { Text(if (isTabRoot) "Receipts" else "My Receipts") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (!isTabRoot) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 actions = {
@@ -102,8 +122,10 @@ fun ReceiptListScreen(
                             contentDescription = if (isGridView) "List View" else "Grid View"
                         )
                     }
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    if (!isTabRoot) {
+                        IconButton(onClick = onSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
                     }
                     IconButton(
                         onClick = {
@@ -114,15 +136,22 @@ fun ReceiptListScreen(
                                         syncService.syncAllUnsynced(dao)
                                     }
                                     result.onSuccess { count ->
-                                        onSyncError?.invoke(
-                                            if (count > 0) "Synced $count receipt(s)" else "No receipts to sync"
+                                        onUserMessage(
+                                            if (count > 0) "Synced $count receipt(s)" else "No receipts to sync",
+                                            false
                                         )
                                     }.onFailure { e ->
-                                        onSyncError?.invoke("Sync failed: ${e.message ?: "Unknown error"}")
+                                        onUserMessage(
+                                            "Sync failed: ${e.message ?: "Unknown error"}",
+                                            true
+                                        )
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
-                                    onSyncError?.invoke("Sync error: ${e.message ?: e.javaClass.simpleName}")
+                                    onUserMessage(
+                                        "Sync error: ${e.message ?: e.javaClass.simpleName}",
+                                        true
+                                    )
                                 } finally {
                                     isSyncing = false
                                 }
@@ -181,7 +210,11 @@ fun ReceiptListScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(receipts!!) { receipt ->
-                            GridReceiptItem(receipt = receipt, onOpen = onOpen)
+                            GridReceiptItem(
+                                receipt = receipt,
+                                onOpen = onOpen,
+                                onSaveImage = saveReceiptImageToGallery
+                            )
                         }
                     }
                 } else {
@@ -196,17 +229,34 @@ fun ReceiptListScreen(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .fillMaxWidth()
-                                    .clickable { onOpen(receipt) }
                             ) {
-                                ListItem(
-                                    headlineContent = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { onOpen(receipt) }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    ) {
                                         Text(receipt.merchant + if (receipt.synced) " ✓" else "")
-                                    },
-                                    supportingContent = { Text("Total: ${receipt.total ?: "-"}") },
-                                    colors = ListItemDefaults.colors(
-                                        containerColor = Color.Transparent
-                                    )
-                                )
+                                        Text(
+                                            text = "Total: ${receipt.total ?: "-"} · ${receiptDateLabel(receipt)}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { saveReceiptImageToGallery(receipt) },
+                                        enabled = receiptHasDownloadableImage(receipt)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = "Save image to gallery"
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -217,8 +267,12 @@ fun ReceiptListScreen(
 }
 
 @Composable
-private fun GridReceiptItem(receipt: ReceiptEntity, onOpen: (ReceiptEntity) -> Unit) {
-    GlassCard(modifier = Modifier.clickable { onOpen(receipt) }) {
+private fun GridReceiptItem(
+    receipt: ReceiptEntity,
+    onOpen: (ReceiptEntity) -> Unit,
+    onSaveImage: (ReceiptEntity) -> Unit
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(8.dp)) {
             val imageModel = when {
                 receipt.imagePath.isNotBlank() && File(receipt.imagePath).exists() -> File(receipt.imagePath)
@@ -229,6 +283,7 @@ private fun GridReceiptItem(receipt: ReceiptEntity, onOpen: (ReceiptEntity) -> U
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
+                    .clickable { onOpen(receipt) }
                     .background(Color.Gray.copy(alpha = 0.2f))
             ) {
                 if (imageModel != null) {
@@ -246,8 +301,25 @@ private fun GridReceiptItem(receipt: ReceiptEntity, onOpen: (ReceiptEntity) -> U
                         tint = Color.Gray
                     )
                 }
+                if (receiptHasDownloadableImage(receipt)) {
+                    IconButton(
+                        onClick = { onSaveImage(receipt) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Save image to gallery"
+                        )
+                    }
+                }
             }
-            Column(modifier = Modifier.padding(top = 8.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .clickable { onOpen(receipt) }
+            ) {
                 Text(
                     text = receipt.merchant + if (receipt.synced) " ✓" else "",
                     style = MaterialTheme.typography.bodyMedium,
@@ -255,13 +327,21 @@ private fun GridReceiptItem(receipt: ReceiptEntity, onOpen: (ReceiptEntity) -> U
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
-                    text = receipt.total ?: "-",
+                    text = "Total: ${receipt.total ?: "-"} · ${receiptDateLabel(receipt)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
         }
     }
+}
+
+/** Record date from [ReceiptEntity.createdAt]. */
+private fun receiptDateLabel(receipt: ReceiptEntity): String {
+    val fmt = DateTimeFormatter.ofPattern("MMM d, yyyy").withZone(ZoneId.systemDefault())
+    return fmt.format(Instant.ofEpochMilli(receipt.createdAt))
 }
 
 @Composable

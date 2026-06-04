@@ -1,34 +1,60 @@
 package com.example.receiptscanner.utils
 
-import android.graphics.BitmapFactory
+import android.content.Context
+import androidx.core.net.toUri
+import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
 
 /**
- * OCR utility functions with proper error handling
+ * Runs ML Kit Latin on-device OCR on a receipt image.
+ *
+ * Improvements over a naive decode + [InputImage.fromBitmap]:
+ * - [InputImage.fromFilePath] applies JPEG EXIF orientation so text is not read sideways.
+ * - Text is assembled in top-to-bottom, left-to-right order from blocks/lines (better for totals/dates).
+ * - Recognition runs on [Dispatchers.IO] and the recognizer is closed after use.
  */
-fun runOcr(
-    path: String,
-    onResult: (String) -> Unit,
-    onError: ((Exception) -> Unit)? = null
-) {
+suspend fun runOcr(context: Context, imagePath: String): Result<String> = withContext(Dispatchers.IO) {
+    val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     try {
-        val bitmap = BitmapFactory.decodeFile(path) ?: run {
-            onError?.invoke(Exception("Failed to decode image from path: $path"))
-            return
+        val image = try {
+            InputImage.fromFilePath(context, File(imagePath).toUri())
+        } catch (e: IOException) {
+            return@withContext Result.failure(Exception("Could not read image file.", e))
         }
-        val image = InputImage.fromBitmap(bitmap, 0)
-        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            .process(image)
-            .addOnSuccessListener { result ->
-                onResult(result.text)
-            }
-            .addOnFailureListener { exception ->
-                onError?.invoke(exception)
-            }
+        val visionText = Tasks.await(recognizer.process(image))
+        Result.success(orderedTextFromVision(visionText))
     } catch (e: Exception) {
-        onError?.invoke(e)
+        Result.failure(e)
+    } finally {
+        recognizer.close()
     }
 }
 
+private fun orderedTextFromVision(visionText: Text): String {
+    val blocks = visionText.textBlocks
+    if (blocks.isNullOrEmpty()) return visionText.text
+    return blocks
+        .sortedWith(
+            compareBy<Text.TextBlock> { it.boundingBox?.top ?: 0 }
+                .thenBy { it.boundingBox?.left ?: 0 }
+        )
+        .joinToString("\n") { orderedLinesFromBlock(it) }
+}
+
+private fun orderedLinesFromBlock(block: Text.TextBlock): String {
+    val lines = block.lines
+    if (lines.isNullOrEmpty()) return block.text
+    return lines
+        .sortedWith(
+            compareBy<Text.Line> { it.boundingBox?.top ?: 0 }
+                .thenBy { it.boundingBox?.left ?: 0 }
+        )
+        .joinToString("\n") { it.text }
+}

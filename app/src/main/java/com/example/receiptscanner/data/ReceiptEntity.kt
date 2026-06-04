@@ -12,5 +12,7 @@ data class ReceiptEntity(
     val imagePath: String,
     val createdAt: Long,
     val synced: Boolean = false,
-    val imageUrl: String? = null // Supabase Storage URL
+    val imageUrl: String? = null, // Supabase Storage URL
+    val tags: String = "",
+    val paymentMethod: String? = null
 )

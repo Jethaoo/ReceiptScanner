@@ -1,6 +1,7 @@
 package com.example.receiptscanner.utils
 
 import android.content.Context
+import android.net.Uri
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
@@ -36,6 +37,26 @@ fun takePhoto(
             }
         }
     )
+}
+
+/**
+ * Copies a gallery-picked image into [receipt_images] for the scan/OCR pipeline.
+ */
+fun copyReceiptImageFromUri(context: Context, uri: Uri): Result<String> {
+    val imagesDir = File(context.filesDir, "receipt_images")
+    if (!imagesDir.exists()) {
+        imagesDir.mkdirs()
+    }
+    val file = File(imagesDir, "r_${System.currentTimeMillis()}.jpg")
+    return try {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            file.outputStream().use { output -> input.copyTo(output) }
+        } ?: return Result.failure(Exception("Could not read selected image."))
+        Result.success(file.absolutePath)
+    } catch (e: Exception) {
+        file.delete()
+        Result.failure(Exception("Could not copy selected image.", e))
+    }
 }
 
 /**

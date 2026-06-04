@@ -7,7 +7,11 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [ReceiptEntity::class], version = 2)
+@Database(
+    entities = [ReceiptEntity::class],
+    version = 3,
+    exportSchema = false,
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun receiptDao(): ReceiptDao
@@ -16,18 +20,24 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile private var INSTANCE: AppDatabase? = null
         
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Check if columns already exist before adding
+            override fun migrate(db: SupportSQLiteDatabase) {
                 try {
-                    database.execSQL("ALTER TABLE receipts ADD COLUMN synced INTEGER NOT NULL DEFAULT 0")
-                } catch (e: Exception) {
-                    // Column might already exist, ignore
-                }
+                    db.execSQL("ALTER TABLE receipts ADD COLUMN synced INTEGER NOT NULL DEFAULT 0")
+                } catch (_: Exception) { }
                 try {
-                    database.execSQL("ALTER TABLE receipts ADD COLUMN imageUrl TEXT")
-                } catch (e: Exception) {
-                    // Column might already exist, ignore
-                }
+                    db.execSQL("ALTER TABLE receipts ADD COLUMN imageUrl TEXT")
+                } catch (_: Exception) { }
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("ALTER TABLE receipts ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+                } catch (_: Exception) { }
+                try {
+                    db.execSQL("ALTER TABLE receipts ADD COLUMN paymentMethod TEXT")
+                } catch (_: Exception) { }
             }
         }
 
@@ -38,8 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "receipts.db"
                 )
-                .addMigrations(MIGRATION_1_2)
-                .fallbackToDestructiveMigration() // For development - removes data on migration failure
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build().also { INSTANCE = it }
             }
     }

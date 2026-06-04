@@ -3,6 +3,10 @@ package com.example.receiptscanner.ui.screens
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
+import android.util.Size
+import java.io.File
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,8 +55,24 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
-    val imageCapture = remember { ImageCapture.Builder().build() }
-    
+    val imageCapture = remember {
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(
+                    Size(1920, 1080),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                )
+            )
+            .build()
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setResolutionSelector(resolutionSelector)
+            .setJpegQuality(88)
+            .setFlashMode(ImageCapture.FLASH_MODE_OFF)
+            .build()
+    }
+
+    var isCapturing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val (hasPermission, requestPermission) = rememberCameraPermissionState(
         onPermissionGranted = {
@@ -67,6 +87,8 @@ fun CameraScreen(
     LaunchedEffect(Unit) {
         if (!hasPermission) {
             requestPermission()
+        } else {
+            File(context.filesDir, "receipt_images").mkdirs()
         }
     }
 
@@ -84,20 +106,26 @@ fun CameraScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    if (hasPermission) {
-                        takePhoto(
-                            context = context,
-                            imageCapture = imageCapture,
-                            onDone = onImage,
-                            onError = { exception ->
-                                val error = "Failed to capture photo: ${exception.message}"
-                                errorMessage = error
-                                onError?.invoke(error)
-                            }
-                        )
-                    } else {
+                    if (!hasPermission) {
                         requestPermission()
+                        return@FloatingActionButton
                     }
+                    if (isCapturing) return@FloatingActionButton
+                    isCapturing = true
+                    takePhoto(
+                        context = context,
+                        imageCapture = imageCapture,
+                        onDone = { path ->
+                            isCapturing = false
+                            onImage(path)
+                        },
+                        onError = { exception ->
+                            isCapturing = false
+                            val error = "Failed to capture photo: ${exception.message}"
+                            errorMessage = error
+                            onError?.invoke(error)
+                        }
+                    )
                 },
                 modifier = Modifier
                     .padding(bottom = 32.dp)

@@ -1,7 +1,6 @@
 package com.example.receiptscanner.data
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +12,7 @@ import kotlin.time.Duration.Companion.seconds
  * Service for syncing receipts with Supabase
  */
 class SupabaseSyncService(private val context: Context) {
-    
+
     private val supabase: io.github.jan.supabase.SupabaseClient? by lazy {
         try {
             SupabaseClient.client
@@ -23,7 +22,7 @@ class SupabaseSyncService(private val context: Context) {
         }
     }
     private val storageBucket = "receipt-images" // Create this bucket in Supabase Storage
-    
+
     /**
      * Sync a single receipt to Supabase
      */
@@ -61,7 +60,6 @@ class SupabaseSyncService(private val context: Context) {
             Result.failure(Exception("Sync failed: ${e.message ?: e.javaClass.simpleName}"))
         }
     }
-    
     /**
      * Upload receipt image to Supabase Storage
      */
@@ -160,7 +158,7 @@ class SupabaseSyncService(private val context: Context) {
             val client = supabase
             if (client == null) {
                 return@withContext Result.failure(
-                    Exception("Supabase not configured. Please check your API credentials in SupabaseClient.kt")
+                    Exception("Supabase not configured. Add supabase.url and supabase.anon.key to local.properties (see SUPABASE_SETUP.md).")
                 )
             }
             
@@ -219,6 +217,43 @@ class SupabaseSyncService(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(Exception("Sync error: ${e.message ?: e.javaClass.simpleName}"))
+        }
+    }
+    /**
+     * Restore all receipts from Supabase into the local Room database
+     */
+    suspend fun restoreReceipts(receiptDao: ReceiptDao): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            val receiptsResult = fetchAllReceipts()
+
+            var resultCount = 0
+            var errorOrNull: Throwable? = null
+
+            receiptsResult.onSuccess { remoteReceipts ->
+                var successCount = 0
+                remoteReceipts.forEach { supReceipt ->
+                    try {
+                        // Pass empty string for imagePath, since we don't have the original local file
+                        val receiptEntity = supReceipt.toReceiptEntity(imagePath = "")
+                        receiptDao.insert(receiptEntity)
+                        successCount++
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                resultCount = successCount
+            }.onFailure { e ->
+                errorOrNull = e
+            }
+
+            if (errorOrNull != null) {
+                Result.failure(errorOrNull!!)
+            } else {
+                Result.success(resultCount)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(Exception("Restore error: ${e.message ?: e.javaClass.simpleName}"))
         }
     }
 }

@@ -1,36 +1,38 @@
 package com.example.receiptscanner.data
 
+import com.example.receiptscanner.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
-import io.github.jan.supabase.realtime.Realtime
 
 /**
- * Supabase client singleton
- * 
- * IMPORTANT: Replace these with your actual Supabase project credentials
- * Get them from: https://app.supabase.com -> Your Project -> Settings -> API
+ * Supabase client singleton.
+ *
+ * Set `supabase.url` and `supabase.anon.key` in **local.properties** (see SUPABASE_SETUP.md in the project root).
+ * Those values are injected into [BuildConfig] at compile time and are not committed to git.
  */
 object SupabaseClient {
-    // TODO: Replace with your Supabase URL and Anon Key
-    private const val SUPABASE_URL = "https://bpaplduibkdvbroagsyr.supabase.co"
-    private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXBsZHVpYmtkdmJyb2Fnc3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyOTQxMjMsImV4cCI6MjA4Mzg3MDEyM30.yqB-KWKoAJEwXHlM7WpVMPa-ml1Cyvm-A-qPsKysnDA"
-    
+
+    private val supabaseUrl: String = BuildConfig.SUPABASE_URL
+    private val supabaseAnonKey: String = BuildConfig.SUPABASE_ANON_KEY
+
     val client: SupabaseClient? by lazy {
-        try {
-            createSupabaseClient(
-                supabaseUrl = SUPABASE_URL,
-                supabaseKey = SUPABASE_ANON_KEY
-            ) {
-                install(Postgrest)
-                install(Storage)
-                install(Realtime)
+        if (supabaseUrl.isBlank() || supabaseAnonKey.isBlank()) {
+            null
+        } else {
+            try {
+                createSupabaseClient(
+                    supabaseUrl = supabaseUrl,
+                    supabaseKey = supabaseAnonKey
+                ) {
+                    install(Postgrest)
+                    install(Storage)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null // Return null if initialization fails
         }
     }
 }
-

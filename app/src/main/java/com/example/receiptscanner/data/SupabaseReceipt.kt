@@ -1,5 +1,6 @@
 package com.example.receiptscanner.data
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,7 +15,9 @@ data class SupabaseReceipt(
     val total: String? = null,
     val image_url: String? = null,
     val created_at: Long,
-    val updated_at: Long = System.currentTimeMillis()
+    val updated_at: Long = System.currentTimeMillis(),
+    val tags: String? = null,
+    @SerialName("payment_method") val payment_method: String? = null
 )
 
 /**
@@ -28,7 +31,9 @@ fun ReceiptEntity.toSupabaseReceipt(): SupabaseReceipt {
         total = total,
         image_url = imageUrl,
         created_at = createdAt,
-        updated_at = System.currentTimeMillis()
+        updated_at = System.currentTimeMillis(),
+        tags = tags.takeIf { it.isNotBlank() },
+        payment_method = paymentMethod
     )
 }
 
@@ -44,7 +49,9 @@ fun SupabaseReceipt.toReceiptEntity(imagePath: String): ReceiptEntity {
         imagePath = imagePath,
         createdAt = created_at,
         synced = true,
-        imageUrl = image_url
+        imageUrl = image_url,
+        tags = tags.orEmpty(),
+        paymentMethod = payment_method
     )
 }
 

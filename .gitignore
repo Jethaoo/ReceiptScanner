@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Kotlin tooling / IDE diagnostics (regenerated)
+.kotlin/

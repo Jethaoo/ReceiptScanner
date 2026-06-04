@@ -21,7 +21,8 @@ val SurfaceVariantDark = Color(0xFF2C2C2E)
 // Glass tokens (translucent layers)
 val GlassSurfaceLight = Color(0x99FFFFFF) // ~60% white
 val GlassSurfaceDark = Color(0x4D1C1C1E)  // ~30% dark surface
-val GlassStrokeLight = Color(0xFFFFFFFF)
+// Light theme needs a darker/less “white-on-white” border to stay visible.
+val GlassStrokeLight = Color(0x330B0B0D)
 val GlassStrokeDark = Color(0x33FFFFFF)
-val GlassHighlightLight = Color(0x1AFFFFFF)
+val GlassHighlightLight = Color(0x1A0B0B0D)
 val GlassHighlightDark = Color(0x1AFFFFFF)
